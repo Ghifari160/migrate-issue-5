@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/ghifari160/migrate/internal/exit"
@@ -24,10 +25,20 @@ type migrateConf struct {
 }
 
 func NewCmdMigrate() Cmd {
+	var util, args string
+
+	util = "rsync"
+	args = "-avr"
+
+	if runtime.GOOS == "windows" {
+		util = "robocopy"
+		args = "/E /COPY:DAT"
+	}
+
 	return &CmdMigrate{
 		c: migrateConf{
-			util: "rsync",
-			args: "-avr",
+			util: util,
+			args: args,
 		},
 	}
 }
