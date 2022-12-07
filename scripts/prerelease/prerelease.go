@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/fs"
 	"os"
@@ -14,23 +15,33 @@ const verFile = "version_generated.go"
 func main() {
 	var verPath, version, confirm string
 	var copyYear int
+	var noninteractive bool
 
 	verPath = filepath.Join("internal", "ver", verFile)
 	version = "0.1.0"
 	copyYear = time.Now().Year()
 
-	fmt.Printf("Path to version file: (%s) ", verPath)
-	fmt.Scanln(&verPath)
+	flag.StringVar(&verPath, "path", verPath, "Set path to version file.")
+	flag.StringVar(&version, "ver", version, "Set version.")
+	flag.IntVar(&copyYear, "copyyear", copyYear, "Set copyright year.")
+	flag.BoolVar(&noninteractive, "noninteractive", false, "Noninteractive mode.")
 
-	fmt.Printf("Version: (%s) ", version)
-	fmt.Scanln(&version)
+	flag.Parse()
 
-	fmt.Printf("Copyright Year: (%d) ", copyYear)
-	fmt.Scanln(&copyYear)
+	if !noninteractive {
+		fmt.Printf("Path to version file: (%s) ", verPath)
+		fmt.Scanln(&verPath)
 
-	prompt := "Path to version file: %s\nVersion: %s\nCopyright Year: %d\nCorrect? (y/n) "
-	prompt = fmt.Sprintf(prompt, verPath, version, copyYear)
-	confirm = promptUntilValid(prompt, []string{"y", "n"}, false)
+		fmt.Printf("Version: (%s) ", version)
+		fmt.Scanln(&version)
+
+		fmt.Printf("Copyright Year: (%d) ", copyYear)
+		fmt.Scanln(&copyYear)
+
+		prompt := "Path to version file: %s\nVersion: %s\nCopyright Year: %d\nCorrect? (y/n) "
+		prompt = fmt.Sprintf(prompt, verPath, version, copyYear)
+		confirm = promptUntilValid(prompt, []string{"y", "n"}, false)
+	}
 
 	if confirm == "n" {
 		os.Exit(0)
