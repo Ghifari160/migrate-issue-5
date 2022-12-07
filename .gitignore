@@ -20,3 +20,5 @@ coverage.out
 .vscode
 
 # Project-specific ignores
+manifest.txt
+temp
