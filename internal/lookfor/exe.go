@@ -10,6 +10,10 @@ import (
 // Exe attempts to find an executable from user paths. If the given path is an executable path,
 // it is converted to an absolute path.
 func Exe(exe string) (string, bool) {
+	if runtime.GOOS == "windows" && filepath.Ext(exe) != ".exe" {
+		exe += ".exe"
+	}
+
 	if filepath.IsAbs(exe) {
 		return exe, true
 	}
@@ -32,6 +36,10 @@ func lookForExe(exe string) (string, bool) {
 	var pathVar, pathVarSep string
 
 	switch runtime.GOOS {
+	case "windows":
+		pathVar = "PATH"
+		pathVarSep = ";"
+
 	case "linux", "darwin":
 		fallthrough
 
