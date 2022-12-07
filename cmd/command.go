@@ -1,7 +1,7 @@
 package cmd
 
 const ManifestName = "manifest.txt"
-const ManifestSep = ":"
+const ManifestSep = ";"
 
 type Cmd interface {
 	Command(args []string) int
