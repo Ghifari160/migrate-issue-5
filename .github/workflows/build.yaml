@@ -1,0 +1,39 @@
+name: Build binaries
+on:
+  workflow_call:
+    inputs:
+      production:
+        type: boolean
+        description: "Run in production mode"
+      version:
+        type: string
+        description: "Version (without leading \"v\")"
+      year:
+        type: string
+        description: "Copyright year"
+jobs:
+  build-macos:
+    name: Build macOS universal binary
+    uses: ghifari160/migrate/.github/workflows/build-macos-universal.yaml@main
+    with:
+      production: ${{inputs.production}}
+      version: ${{inputs.version}}
+      year: ${{inputs.year}}
+  build-linux-x86:
+    name: Build Linux x86 binary
+    uses: ghifari160/migrate/.github/workflows/build-linux.yaml@main
+    with:
+      goarch: 386
+      archid: x86
+      production: ${{inputs.production}}
+      version: ${{inputs.version}}
+      year: ${{inputs.year}}
+  build-linux-arm:
+    name: Build Linux ARM binary
+    uses: ghifari160/migrate/.github/workflows/build-linux.yaml@main
+    with:
+      goarch: arm
+      archid: arm
+      production: ${{inputs.production}}
+      version: ${{inputs.version}}
+      year: ${{inputs.year}}

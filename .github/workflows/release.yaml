@@ -1,0 +1,80 @@
+name: Release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    name: Sanitize version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.version.outputs.result}}
+      year: ${{steps.year.outputs.result}}
+      tag: ${{steps.tag.outputs.result}}
+    steps:
+    - id: tag
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: return context.ref.replace(/refs\/tags\//, "")
+        result-encoding: string
+    - id: version
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: return context.ref.replace(/refs\/tags\/(v*)/, "")
+        result-encoding: string
+    - id: year
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: return new Date().getFullYear()
+        result-encoding: string
+  build-binaries:
+    needs: [prepare]
+    name: Build binaries
+    uses: ghifari160/migrate/.github/workflows/build.yaml@main
+    with:
+      production: true
+      version: ${{needs.prepare.outputs.version}}
+      year: ${{needs.prepare.outputs.year}}
+  upload-artifacts-release:
+    needs: [prepare,build-binaries]
+    runs-on: ubuntu-latest
+    name: Upload artifacts to release
+    steps:
+    - name: Download build artifacts
+      id: artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: migrate
+    - name: Upload artifacts to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz
+          ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz
+          ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz
+  upload-artifacts-do:
+    needs: [prepare,build-binaries]
+    runs-on: ubuntu-latest
+    name: Upload artifacts to DO Spaces
+    steps:
+    - name: Setup s3cmd
+      uses: s3-actions/s3cmd@v1.3.0
+      with:
+        provider: digitalocean
+        region: nyc3
+        access_key: ${{secrets.S3_ACCESS_KEY}}
+        secret_key: ${{secrets.S3_SECRET_KEY}}
+    - name: Download build artifacts
+      id: artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: migrate
+    - name: Upload tarballs to DO Spaces
+      run: |
+        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
+        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
+        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
