@@ -22,3 +22,4 @@ coverage.out
 # Project-specific ignores
 manifest.txt
 temp
+internal/ver/version_generated.go
