@@ -48,7 +48,8 @@ func main() {
 
 func version() {
 	fmt.Printf("%s v%s\n", ver.Tool, ver.Version)
-	fmt.Printf("Copyright (C) GHIFARI160 %d. Distributed under MIT License\n", ver.Copyright)
+	fmt.Printf(ver.Copyright, ver.Authors, ver.CopyrightYear)
+	fmt.Println()
 }
 
 func usage() string {

@@ -97,7 +97,7 @@ func genVer(ver string, copyYear int) string {
 package ver
 
 const (
-	Copyright = %d
+	CopyrightYear = %d
 	Version   = "%s"
 )
 `
