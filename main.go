@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/ghifari160/migrate/cmd"
@@ -19,11 +18,6 @@ func main() {
 
 	validCommands["run"] = cmd.NewCmdMigrate()
 	validCommands["generate"] = cmd.NewCmdGenerate()
-
-	if runtime.GOOS == "windows" {
-		fmt.Println("Windows is not supported")
-		os.Exit(exit.IncompatibleOS)
-	}
 
 	var ver bool
 	flag.BoolVar(&ver, "version", false, "Print tool version.")
