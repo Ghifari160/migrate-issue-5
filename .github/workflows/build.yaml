@@ -37,3 +37,12 @@ jobs:
       production: ${{inputs.production}}
       version: ${{inputs.version}}
       year: ${{inputs.year}}
+  build-windows:
+    name: Build Windows binary
+    uses: ghifari160/migrate/.github/workflows/build-windows.yaml@main
+    with:
+      goarch: 386
+      archid: x86
+      production: ${{inputs.production}}
+      version: ${{inputs.version}}
+      year: ${{inputs.year}}
