@@ -41,8 +41,8 @@ jobs:
     - name: Build Windows RELEASE binary (${{inputs.archid}})
       if: ${{inputs.production}}
       run: GOOS=windows GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate main.go
-    - name: Create tarball
-      run: cd out && tar -zcvf ../migrate-windows_${{inputs.archid}}.tar.gz . && cd ..
+    - name: Create zip
+      run: cd out && zip -r ../migreate-windows_${{inputs.archid}}.zip . && cd ..
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
