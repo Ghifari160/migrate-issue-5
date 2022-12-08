@@ -49,7 +49,7 @@ func (c *CmdGenerate) Command(args []string) int {
 		return exit.Usage
 	}
 
-	args = flag.Args()
+	args = c.f.Args()
 
 	if len(args) < 2 || len(args[0]) < 1 || len(args[1]) < 1 {
 		return exit.Usage
