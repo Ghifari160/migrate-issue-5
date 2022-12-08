@@ -41,8 +41,15 @@ The generate subcommand supports the following flags:
 
 ### Copy files
 
+You can provide a source path and a destination path,
+
 ``` shell
 migrate run [flags] <source> <destination>
+```
+
+or provide a path to a manifest.
+
+``` shell
 migrate run [flags] <manifest>
 ```
 
@@ -50,16 +57,22 @@ When a manifest is provided, Migrate will read the manifest and copy files to th
 
 The run subcommand supports the following flags:
 
-| Flag        | Type     | Default | Descriptions                                                                                        |
-|-------------|----------|---------|-----------------------------------------------------------------------------------------------------|
-| `dryrun`    | `bool`   | `false` | Run in dry run mode. Simply print the execution commands without executing them.                    |
-| `util`      | `string` | `rsync` | Path to copying utility or its name. Migrate will search for this utility and use it to copy files. |
-| `util-args` | `string` | `-avr`  | Arguments for the copying utility.                                                                  |
+| Flag        | Type     | Default                                                  | Descriptions                                                                                                                                           |
+|-------------|----------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `dryrun`    | `bool`   | `false`                                                  | Run in dry run mode. Simply print the execution commands without executing them.                                                                       |
+| `util`      | `string` | `rsync` on Linux and macOS, and `robocopy` on Windows    | Path to copying utility or its name. Migrate will search for this utility and use it to copy files. On Windows, `.exe` will be automatically appended. |
+| `util-args` | `string` | `-avr` on Linux and macOS, and `/E /COPY:DAT` on Windows | Arguments for the copying utility.                                                                                                                     |
 
 ## Building
 
-Migrate requires [Go](https://go.dev/) 1.19.
+Migrate requires [Go](https://go.dev/) 1.18 as it makes use of [generics](https://go.dev/blog/intro-generics).
 There are no other dependency requirements.
+
+### Windows
+
+``` shell
+go build -o out/migrate.exe main.go
+```
 
 ### Linux
 
