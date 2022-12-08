@@ -56,6 +56,7 @@ jobs:
           ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz
           ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz
           ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz
+          ${{steps.artifacts.outputs.download-path}}/migrate-windows_x86.zip/migrate-windows_x86.zip
   upload-artifacts-do:
     needs: [prepare,build-binaries]
     runs-on: ubuntu-latest
@@ -78,3 +79,4 @@ jobs:
         s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
         s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
         s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
+        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-windows_x86.zip/migrate-windows_x86.zip --mime-type application/zip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
