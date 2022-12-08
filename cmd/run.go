@@ -14,8 +14,10 @@ import (
 )
 
 type CmdMigrate struct {
-	m map[string]string
-	c migrateConf
+	f          *flag.FlagSet
+	printFlags bool
+	m          map[string]string
+	c          migrateConf
 }
 
 type migrateConf struct {
@@ -36,6 +38,7 @@ func NewCmdMigrate() Cmd {
 	}
 
 	return &CmdMigrate{
+		f: NewFlagSet("run"),
 		c: migrateConf{
 			util: util,
 			args: args,
@@ -47,19 +50,21 @@ func (c *CmdMigrate) Command(args []string) int {
 	var err error
 	var manifest, src, dest string
 
-	flag := flag.NewFlagSet("run", flag.ContinueOnError)
-	flag.BoolVar(&c.c.dryRun, "dryrun", c.c.dryRun, "Run in dry run mode.")
-	flag.StringVar(&c.c.util, "util", c.c.util, "Copying utility.")
-	flag.StringVar(&c.c.args, "util-args", c.c.args, "Copying utility arguments.")
+	c.f.BoolVar(&c.c.dryRun, "dryrun", c.c.dryRun, "Run in dry run mode.")
+	c.f.StringVar(&c.c.util, "util", c.c.util, "Copying utility.")
+	c.f.StringVar(&c.c.args, "util-args", c.c.args, "Copying utility arguments.")
 
-	flag.Parse(args)
-	args = flag.Args()
-
-	if len(args) < 1 {
+	err = c.f.Parse(args)
+	if err != nil {
+		c.printFlags = true
 		return exit.Usage
 	}
 
-	if len(args) < 2 {
+	args = c.f.Args()
+
+	if len(args) < 1 {
+		manifest = ManifestName
+	} else if len(args) < 2 {
 		if len(args[0]) < 1 {
 			return exit.Usage
 		}
@@ -171,7 +176,13 @@ func copy(config migrateConf, src, dest string) {
 }
 
 func (c *CmdMigrate) Usage() string {
-	return "  migrate run SRC DEST\n  migrate run MANIFEST\n"
+	usage := "  migrate run [FLAGS] SRC DEST\n  migrate run [FLAGS] [MANIFEST]\n"
+
+	if c.printFlags {
+		usage += "\nFLAGS:\n\n" + PrintDefaults(c.f)
+	}
+
+	return usage
 }
 
 func (c *CmdMigrate) private() {}

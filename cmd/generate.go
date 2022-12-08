@@ -10,11 +10,13 @@ import (
 )
 
 type CmdGenerate struct {
-	c        generateConf
-	m        map[string]string
-	src      string
-	dest     string
-	manifest string
+	f          *flag.FlagSet
+	printFlags bool
+	c          generateConf
+	m          map[string]string
+	src        string
+	dest       string
+	manifest   string
 }
 
 type generateConf struct {
@@ -25,6 +27,7 @@ type generateConf struct {
 
 func NewCmdGenerate() Cmd {
 	return &CmdGenerate{
+		f: NewFlagSet("generate"),
 		c: generateConf{
 			overwrite: false,
 			relSrc:    true,
@@ -35,12 +38,17 @@ func NewCmdGenerate() Cmd {
 
 func (c *CmdGenerate) Command(args []string) int {
 	var err error
-	flag := flag.NewFlagSet("generate", flag.ContinueOnError)
-	flag.BoolVar(&c.c.overwrite, "overwrite", c.c.overwrite, "Overwrite manifest.")
-	flag.BoolVar(&c.c.relSrc, "rel-src", c.c.relSrc, "Relative source path in the manifest.")
-	flag.BoolVar(&c.c.relDest, "rel-dest", c.c.relDest, "relative destination path in the manifest.")
 
-	flag.Parse(args)
+	c.f.BoolVar(&c.c.overwrite, "overwrite", c.c.overwrite, "Overwrite manifest.")
+	c.f.BoolVar(&c.c.relSrc, "rel-src", c.c.relSrc, "Relative source path in the manifest.")
+	c.f.BoolVar(&c.c.relDest, "rel-dest", c.c.relDest, "relative destination path in the manifest.")
+
+	err = c.f.Parse(args)
+	if err != nil {
+		c.printFlags = true
+		return exit.Usage
+	}
+
 	args = flag.Args()
 
 	if len(args) < 2 || len(args[0]) < 1 || len(args[1]) < 1 {
@@ -148,7 +156,13 @@ func generate(config generateConf, m map[string]string, src, dest string) {
 }
 
 func (c *CmdGenerate) Usage() string {
-	return "  migrate generate SRC DEST [MANIFEST]\n"
+	usage := "  migrate generate SRC DEST [MANIFEST]\n"
+
+	if c.printFlags {
+		usage += "\nFLAGS:\n\n" + PrintDefaults(c.f)
+	}
+
+	return usage
 }
 
 func (c *CmdGenerate) private() {}
