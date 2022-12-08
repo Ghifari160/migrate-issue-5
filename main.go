@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -19,22 +18,20 @@ func main() {
 	validCommands["run"] = cmd.NewCmdMigrate()
 	validCommands["generate"] = cmd.NewCmdGenerate()
 
-	var ver bool
-	flag.BoolVar(&ver, "version", false, "Print tool version.")
-	flag.Parse()
-
-	if ver {
-		version()
-		handleExit(exit.Norm)
-	}
-
-	args := flag.Args()
-	if len(args) < 1 {
+	args := os.Args
+	if len(args) < 2 {
 		handleExit(exit.Usage)
 	}
+	args = sliceShift(args)
 
 	c, valid := validCommands[args[0]]
 	if !valid {
+		switch strings.ToLower(args[0]) {
+		case "version", "-version", "--version":
+			version()
+			handleExit(exit.Norm)
+		}
+
 		handleExit(exit.Usage)
 	}
 	args = sliceShift(args)
@@ -51,7 +48,7 @@ func main() {
 
 func version() {
 	fmt.Printf("%s v%s\n", ver.Tool, ver.Version)
-	fmt.Printf("Copyright (C) GHIFARI160 %d. Distributed under MIT License", ver.Copyright)
+	fmt.Printf("Copyright (C) GHIFARI160 %d. Distributed under MIT License\n", ver.Copyright)
 }
 
 func usage() string {
