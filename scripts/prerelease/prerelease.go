@@ -43,6 +43,13 @@ func main() {
 	var confirm string
 	var noninteractive bool
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%s ERROR: %v\n", lastErrorStep, r)
+			os.Exit(1)
+		}
+	}()
+
 	verPath = filepath.Join("internal", "ver")
 	winresPath = filepath.Join("winres")
 
@@ -83,17 +90,8 @@ func main() {
 	fmt.Println()
 
 	stepSetupGoWinres(conf)
-
 	stepGenVer(conf)
-
 	stepGenWinres(conf)
-
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("%s ERROR: %v\n", lastErrorStep, r)
-			os.Exit(1)
-		}
-	}()
 
 	fmt.Println()
 	fmt.Println("Done")
