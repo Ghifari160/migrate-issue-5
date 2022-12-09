@@ -23,3 +23,5 @@ coverage.out
 manifest.txt
 temp
 internal/ver/version_generated.go
+winres
+*.syso
