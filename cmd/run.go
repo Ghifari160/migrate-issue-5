@@ -112,18 +112,23 @@ func (c *CmdMigrate) Task() int {
 }
 
 // normPaths normalizes paths by converting them to absolute paths.
+// Trailing slashes are reintroduced into the paths after normalizations.
 func normPaths(src, dest string) (string, string, bool) {
 	var err error
 
-	src, err = filepath.Abs(src)
+	aSrc, err := filepath.Abs(src)
 	if err != nil {
 		return "", "", false
 	}
 
-	dest, err = filepath.Abs(dest)
+	aDest, err := filepath.Abs(dest)
 	if err != nil {
 		return "", "", false
 	}
+
+	// reintroduce trailing slashes
+	src = PreserveTrailingSlash(src, aSrc)
+	dest = PreserveTrailingSlash(dest, aDest)
 
 	return src, dest, true
 }
