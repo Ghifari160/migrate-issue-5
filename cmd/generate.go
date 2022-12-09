@@ -65,6 +65,10 @@ func (c *CmdGenerate) Command(args []string) int {
 		return exit.NotFound
 	}
 
+	// reintroduce trailing slashes
+	c.src = PreserveTrailingSlash(args[0], c.src)
+	c.dest = PreserveTrailingSlash(args[1], c.dest)
+
 	c.manifest = ManifestName
 	if len(args) > 2 && len(args[2]) > 0 {
 		c.manifest = args[2]
@@ -101,17 +105,23 @@ func (c *CmdGenerate) Task() int {
 	rel := filepath.Dir(c.manifest)
 	for src, dest := range c.m {
 		if c.c.relSrc {
-			src, err = filepath.Rel(rel, src)
+			relSrc, err := filepath.Rel(rel, src)
 			if err != nil {
 				continue
 			}
+
+			// reintroduce trailing slash
+			src = PreserveTrailingSlash(src, relSrc)
 		}
 
 		if c.c.relDest {
-			dest, err = filepath.Rel(rel, dest)
+			relDest, err := filepath.Rel(rel, dest)
 			if err != nil {
 				continue
 			}
+
+			// reintroduce trailing slash
+			dest = PreserveTrailingSlash(dest, relDest)
 		}
 
 		_, err = file.WriteString(src + ManifestSep + dest + "\n")
