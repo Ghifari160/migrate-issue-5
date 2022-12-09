@@ -37,11 +37,11 @@ jobs:
           -ver ${{inputs.version}} -copyyear ${{inputs.year}}
     - name: Build Linux binary (${{inputs.archid}})
       if: ${{!inputs.production}}
-      run: GOOS=linux GOARCH=${{inputs.goarch}} go build -o out/migrate main.go
+      run: GOOS=linux GOARCH=${{inputs.goarch}} go build -o out/migrate .
     - name: Build Linux RELEASE binary (${{inputs.archid}})
       if: ${{inputs.production}}
-      run: GOOS=linux GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate main.go
-    - name: Creat tarball
+      run: GOOS=linux GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate .
+    - name: Create tarball
       run: cd out && tar -zcvf ../migrate-linux_${{inputs.archid}}.tar.gz . && cd ..
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3

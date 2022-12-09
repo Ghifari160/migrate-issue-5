@@ -37,10 +37,10 @@ jobs:
           -ver ${{inputs.version}} -copyyear ${{inputs.year}}
     - name: Build macOS binary (${{inputs.archid}})
       if: ${{!inputs.production}}
-      run: GOOS=darwin GOARCH=${{inputs.goarch}} go build -o out/migrate main.go
+      run: GOOS=darwin GOARCH=${{inputs.goarch}} go build -o out/migrate .
     - name: Build macOS RELEASE binary (${{inputs.archid}})
       if: ${{inputs.production}}
-      run: GOOS=darwin GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate main.go
+      run: GOOS=darwin GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate .
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:

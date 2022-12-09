@@ -37,10 +37,10 @@ jobs:
           -ver ${{inputs.version}} -copyyear ${{inputs.year}}
     - name: Build Windows binary (${{inputs.archid}})
       if: ${{!inputs.production}}
-      run: GOOS=windows GOARCH=${{inputs.goarch}} go build -o out/migrate.exe main.go
+      run: GOOS=windows GOARCH=${{inputs.goarch}} go build -o out/migrate.exe .
     - name: Build Windows RELEASE binary (${{inputs.archid}})
       if: ${{inputs.production}}
-      run: GOOS=windows GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate.exe main.go
+      run: GOOS=windows GOARCH=${{inputs.goarch}} go build -tags prod -o out/migrate.exe .
     - name: Create zip
       run: cd out && zip -r ../migrate-windows_${{inputs.archid}}.zip . && cd ..
     - name: Upload build artifacts
