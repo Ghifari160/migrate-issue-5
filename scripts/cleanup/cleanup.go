@@ -23,6 +23,7 @@ func main() {
 	stepRmWinresDir()
 	stepRmSysos()
 	stepRmBuildDir()
+	stepRmLogsDir()
 
 	fmt.Println()
 }
@@ -78,5 +79,14 @@ func stepRmBuildDir() {
 	err := os.RemoveAll("out")
 	if err != nil && !os.IsNotExist(err) {
 		handleError("rm build dir", err)
+	}
+}
+
+// stepRmLogsDir removes the logs directory.
+func stepRmLogsDir() {
+	fmt.Println("rm logs dir")
+	err := os.RemoveAll("logs")
+	if err != nil && !os.IsNotExist(err) {
+		handleError("rm logs dir", err)
 	}
 }

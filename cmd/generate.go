@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/ghifari160/migrate/internal/exit"
+	"github.com/ghifari160/migrate/internal/logger"
 )
 
 type CmdGenerate struct {
@@ -17,6 +19,7 @@ type CmdGenerate struct {
 	src        string
 	dest       string
 	manifest   string
+	log        *logger.Logger
 }
 
 type generateConf struct {
@@ -79,15 +82,23 @@ func (c *CmdGenerate) Command(args []string) int {
 		return exit.NotFound
 	}
 
+	c.log, err = logger.OpenLogs("logs")
+	if err != nil {
+		return exit.LogError
+	}
+	fmt.Println("Logging to " + c.log.Dir() + ".")
+
 	return exit.RDY
 }
 
 func (c *CmdGenerate) Task() int {
+	defer c.log.Close()
+
 	var err error
 
 	c.m = make(map[string]string)
 
-	generate(c.c, c.m, c.src, c.dest)
+	generate(c.log, c.c, c.m, c.src, c.dest)
 
 	flag := os.O_CREATE | os.O_WRONLY
 	if !c.c.overwrite {
@@ -96,17 +107,23 @@ func (c *CmdGenerate) Task() int {
 		flag |= os.O_TRUNC
 	}
 
+	c.log.Log(logger.LevelINFO, "Opening manifest file at "+c.manifest)
 	file, err := os.OpenFile(c.manifest, flag, fs.FileMode(0644))
 	if err != nil {
+		c.log.Log(logger.LevelError, "Error opening manifest: "+err.Error())
 		return exit.ManifestWrite
 	}
 	defer file.Close()
 
 	rel := filepath.Dir(c.manifest)
 	for src, dest := range c.m {
+		c.log.Log(logger.LevelINFO, "Writing manifest entry for "+src)
+
 		if c.c.relSrc {
 			relSrc, err := filepath.Rel(rel, src)
 			if err != nil {
+				c.log.Log(logger.LevelError, "Unable to create relative src path for "+src+". Skipping.")
+				c.log.File(src).Log(logger.LevelError, "Error creating src relative path: "+err.Error())
 				continue
 			}
 
@@ -117,6 +134,8 @@ func (c *CmdGenerate) Task() int {
 		if c.c.relDest {
 			relDest, err := filepath.Rel(rel, dest)
 			if err != nil {
+				c.log.Log(logger.LevelError, "Unable to create relative dest path for "+src+". Skipping.")
+				c.log.File(src).Log(logger.LevelError, "Error creating dest relative path: "+err.Error())
 				continue
 			}
 
@@ -126,6 +145,8 @@ func (c *CmdGenerate) Task() int {
 
 		_, err = file.WriteString(src + ManifestSep + dest + "\n")
 		if err != nil {
+			c.log.Log(logger.LevelError, "Unable to create manifest entry for "+src+". Skipping.")
+			c.log.File(src).Log(logger.LevelError, "Error creating manifest entry: "+err.Error())
 			continue
 		}
 	}
@@ -136,18 +157,24 @@ func (c *CmdGenerate) Task() int {
 // generate generates a source->dest mapping for the given src and dest. If src is a dir, it is
 // scanned and the mappings will be for its children instead. This is NOT done recursively. It is
 // up to the copying utility to handle directories.
-func generate(config generateConf, m map[string]string, src, dest string) {
+func generate(log *logger.Logger, config generateConf, m map[string]string, src, dest string) {
 	var err error
 	var files []string
 
+	log.Log(logger.LevelINFO, "Generating mapping for "+src)
+
 	s, err := os.Stat(src)
 	if err != nil {
+		log.Log(logger.LevelError, "Error generating mapping for "+src)
+		log.File(src).Log(logger.LevelError, "Error generating mapping: "+err.Error())
 		return
 	}
 
 	if s.IsDir() {
 		f, err := os.ReadDir(src)
 		if err != nil {
+			log.Log(logger.LevelError, "Error reading directory contents for "+src)
+			log.File(src).Log(logger.LevelError, "Error reading directory: "+err.Error())
 			return
 		}
 
@@ -161,6 +188,7 @@ func generate(config generateConf, m map[string]string, src, dest string) {
 	}
 
 	for _, file := range files {
+		log.Log(logger.LevelINFO, "Found "+file)
 		m[file] = dest
 	}
 }

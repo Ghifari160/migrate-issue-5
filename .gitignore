@@ -25,3 +25,4 @@ temp
 internal/ver/version_generated.go
 winres
 *.syso
+logs

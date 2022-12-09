@@ -9,6 +9,7 @@ const (
 	ManifestWrite
 	UtilNotFound
 	NotFound
+	LogError
 )
 
 // Message returns the user friendly error message for the given exit code.
@@ -34,6 +35,9 @@ func Message(code int) string {
 
 	case NotFound:
 		return "File not found"
+
+	case LogError:
+		return "Logging error"
 
 	default:
 		return "Unknown error"
