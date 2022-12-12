@@ -53,8 +53,12 @@ func removePattern(pattern string) error {
 // stepRmGeneratedFiles removes generated files.
 func stepRmGeneratedFiles() {
 	fmt.Println("rm generated files")
-	err := removePattern("*/***/*_generated.*")
-	handleError("rm generated file", err)
+
+	err := removePattern("*_generated.*")
+	handleError("rm generated files/root", err)
+
+	err = removePattern("*/***/*_generated.*")
+	handleError("rm generated files/nested", err)
 }
 
 // stepRmWinresDir removes winres config dir.
@@ -69,8 +73,12 @@ func stepRmWinresDir() {
 // stepRmSysos removes *.syso files.
 func stepRmSysos() {
 	fmt.Println("rm sysos")
-	err := removePattern("*/***/*.syso")
-	handleError("rm sysos", err)
+
+	err := removePattern("*.syso")
+	handleError("rm sysos/root", err)
+
+	err = removePattern("*/***/*.syso")
+	handleError("rm sysos/nested", err)
 }
 
 // stepRmBuildDir removes the build directory.
