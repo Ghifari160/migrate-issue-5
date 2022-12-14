@@ -11,7 +11,6 @@ import (
 
 	"github.com/ghifari160/migrate/internal/exit"
 	"github.com/ghifari160/migrate/internal/logger"
-	"github.com/ghifari160/migrate/internal/lookfor"
 )
 
 type CmdMigrate struct {
@@ -87,8 +86,8 @@ func (c *CmdMigrate) Command(args []string) int {
 		dest = args[1]
 	}
 
-	util, found := lookfor.Exe(c.c.util)
-	if !found {
+	util, err := exec.LookPath(c.c.util)
+	if err != nil || len(util) < 1 {
 		return exit.UtilNotFound
 	}
 	c.c.util = util
