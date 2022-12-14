@@ -98,7 +98,10 @@ func (c *CmdGenerate) Task() int {
 
 	c.m = make(map[string]string)
 
-	generate(c.log, c.c, c.m, c.src, c.dest)
+	status := generate(c.log, c.c, c.m, c.src, c.dest)
+	if status != exit.Norm {
+		return status
+	}
 
 	flag := os.O_CREATE | os.O_WRONLY
 	if !c.c.overwrite {
@@ -154,10 +157,11 @@ func (c *CmdGenerate) Task() int {
 	return exit.Norm
 }
 
-// generate generates a source->dest mapping for the given src and dest. If src is a dir, it is
-// scanned and the mappings will be for its children instead. This is NOT done recursively. It is
-// up to the copying utility to handle directories.
-func generate(log *logger.Logger, config generateConf, m map[string]string, src, dest string) {
+// generate generates a source->dest mapping for the given src and dest and returns status code.
+// If src is a dir, it is scanned and the mappings will be for its children instead.
+// This is NOT done recursively.
+// It is up to the copying utility to handle directories.
+func generate(log *logger.Logger, config generateConf, m map[string]string, src, dest string) int {
 	var err error
 	var files []string
 
@@ -167,22 +171,37 @@ func generate(log *logger.Logger, config generateConf, m map[string]string, src,
 	if err != nil {
 		log.Log(logger.LevelError, "Error generating mapping for "+src)
 		log.File(src).Log(logger.LevelError, "Error generating mapping: "+err.Error())
-		return
+
+		return exit.ManifestWrite
 	}
 
+	var isDot bool
 	if s.IsDir() {
-		f, err := os.ReadDir(src)
+		isDot, err = isCwd(src)
 		if err != nil {
-			log.Log(logger.LevelError, "Error reading directory contents for "+src)
-			log.File(src).Log(logger.LevelError, "Error reading directory: "+err.Error())
-			return
+			log.Log(logger.LevelError, "Error checking directory "+src)
+			log.File(src).Log(logger.LevelError, "Error checking directory: "+err.Error())
+
+			return exit.ManifestWrite
 		}
 
-		files = make([]string, 0, len(f))
-		for _, file := range f {
-			files = append(files, filepath.Join(src, file.Name()))
+		if hasTrailingSlash(src) || isDot {
+			f, err := os.ReadDir(src)
+			if err != nil {
+				log.Log(logger.LevelError, "Error reading directory contents for "+src)
+				log.File(src).Log(logger.LevelError, "Error reading directory: "+err.Error())
+
+				return exit.ManifestWrite
+			}
+
+			files = make([]string, 0, len(f))
+			for _, file := range f {
+				files = append(files, filepath.Join(src, file.Name()))
+			}
 		}
-	} else {
+	}
+
+	if len(files) < 1 && !hasTrailingSlash(src) {
 		files = make([]string, 1)
 		files[0] = src
 	}
@@ -191,6 +210,8 @@ func generate(log *logger.Logger, config generateConf, m map[string]string, src,
 		log.Log(logger.LevelINFO, "Found "+file)
 		m[file] = dest
 	}
+
+	return exit.Norm
 }
 
 func (c *CmdGenerate) Usage() string {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -40,9 +41,29 @@ func PrintDefaults(f *flag.FlagSet) string {
 // If the original string ends with a trailing slash, it is reintroduced to the normalized string.
 // Otherwise, the normalized string is returned as is.
 func PreserveTrailingSlash(original, normalized string) string {
-	if original[len(original)-1:] == PathSep {
+	if hasTrailingSlash(original) {
 		return normalized + PathSep
 	}
 
 	return normalized
+}
+
+// hasTrailingSlash checks if the path has a trailing slash.
+func hasTrailingSlash(path string) bool {
+	return path[len(path)-1:] == PathSep
+}
+
+// isCwd matches the path to the current working directory.
+func isCwd(path string) (bool, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return false, err
+	}
+
+	return path == cwd, nil
 }
