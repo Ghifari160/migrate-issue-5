@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,7 +20,8 @@ import (
 type CmdMigrate struct {
 	f          *flag.FlagSet
 	printFlags bool
-	m          map[string]string
+	m          *bufio.Reader
+	closeM     func() error
 	c          migrateConf
 	log        *logger.Logger
 }
@@ -96,11 +98,7 @@ func (c *CmdMigrate) Command(args []string) int {
 	c.c.util = util
 
 	if len(manifest) > 0 {
-		c.m, err = readManifest(c.log, manifest)
-		if err != nil {
-			c.log.Log(logger.LevelError, "error reading manifest: "+err.Error())
-			return exit.ManifestRead
-		}
+		c.m, c.closeM, err = openManifest(c.log, manifest)
 	} else {
 		src, dest, norm := normPaths(src, dest)
 		if !norm {
@@ -108,14 +106,19 @@ func (c *CmdMigrate) Command(args []string) int {
 			return exit.ManifestRead
 		}
 
-		c.m = make(map[string]string)
-		c.m[src] = dest
+		c.m, c.closeM, err = manifestFromArgs(c.log, src, dest)
+	}
+
+	if err != nil {
+		c.log.Log(logger.LevelError, "error reading manifest: "+err.Error())
+		return exit.ManifestRead
 	}
 
 	return exit.RDY
 }
 
 func (c *CmdMigrate) Task() int {
+	defer c.closeM()
 	defer c.log.Close()
 
 	if c.c.dryRun {
@@ -125,7 +128,23 @@ func (c *CmdMigrate) Task() int {
 
 	c.log.Log(logger.LevelINFO, "Copying files with "+c.c.util+".")
 
-	for src, dest := range c.m {
+	lineN := 1
+	eof := false
+
+	for !eof {
+		src, dest, err := readManifestEntry(c.m, &lineN)
+		if err != nil {
+			if errors.Is(err, errManifest) {
+				c.log.Log(logger.LevelWARN, "Error: "+err.Error())
+			} else if errors.Is(err, io.EOF) {
+				eof = true
+			} else {
+				return exit.ManifestRead
+			}
+
+			continue
+		}
+
 		copy(c.log, c.c, src, dest)
 	}
 
@@ -162,6 +181,20 @@ func openManifest(log *logger.Logger, manifest string) (*bufio.Reader, func() er
 	}
 
 	return bufio.NewReader(m), m.Close, nil
+}
+
+// manifestFromArgs returns a manifest buffered reader from the given src and dest paths.
+func manifestFromArgs(log *logger.Logger, src, dest string) (*bufio.Reader, func() error, error) {
+	var buffer bytes.Buffer
+	closeFn := func() error {
+		buffer.Reset()
+
+		return nil
+	}
+
+	buffer.WriteString(src + ManifestSep + dest)
+
+	return bufio.NewReader(&buffer), closeFn, nil
 }
 
 // readManifestEntry reads and parses the next line of the manifest.
@@ -207,6 +240,13 @@ func readManifestEntry(m *bufio.Reader, lineN *int) (string, string, error) {
 }
 
 // readManifest parses the manifest and generates source->dest map.
+//
+// Deprecated: readManifest has been refactored to partially fix [#2], but it still stores the
+// whole mappings into memory.
+// Parsing the manifest should truly be done line-by-line by calling openManifest and
+// readManifestEntry.
+//
+// [#2]: https://github.com/Ghifari160/migrate/issues/2
 func readManifest(log *logger.Logger, manifest string) (map[string]string, error) {
 	m, closeM, err := openManifest(log, manifest)
 	if err != nil {
