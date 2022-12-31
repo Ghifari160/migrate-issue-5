@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -151,30 +154,81 @@ func normPaths(src, dest string) (string, string, bool) {
 	return src, dest, true
 }
 
+// openManifest opens the manifest and creates a buffered reader.
+func openManifest(log *logger.Logger, manifest string) (*bufio.Reader, func() error, error) {
+	m, err := os.Open(manifest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return bufio.NewReader(m), m.Close, nil
+}
+
+// readManifestEntry reads and parses the next line of the manifest.
+// The normalized source path and destination path are returned.
+//
+// readManifestEntry reads whole lines from the buffered reader when possible.
+// If the lines are too long for a single read, multiple reads executed until the whole line has
+// been read.
+//
+// lineN is advanced after a successful read and parse.
+func readManifestEntry(m *bufio.Reader, lineN *int) (string, string, error) {
+	var lineBuilder strings.Builder
+	var lineBuffer []byte
+	var err error
+	isPrefix := true
+
+	for isPrefix {
+		lineBuffer, isPrefix, err = m.ReadLine()
+		if err != nil {
+			return "", "", err
+		}
+
+		lineBuilder.Write(lineBuffer)
+	}
+
+	defer func() { (*lineN)++ }()
+
+	if lineBuilder.Len() < 1 {
+		return "", "", newManifestErr(*lineN, "empty line")
+	}
+
+	mapping := strings.Split(lineBuilder.String(), ManifestSep)
+	if len(mapping) < 2 || len(mapping[0]) < 1 || len(mapping[1]) < 1 {
+		return "", "", newManifestErr(*lineN, "syntax error")
+	}
+
+	src, dest, norm := normPaths(mapping[0], mapping[1])
+	if !norm {
+		return "", "", newManifestErr(*lineN, "cannot normalize paths for "+src+" => "+dest)
+	}
+
+	return src, dest, nil
+}
+
 // readManifest parses the manifest and generates source->dest map.
 func readManifest(log *logger.Logger, manifest string) (map[string]string, error) {
-	m, err := os.ReadFile(manifest)
+	m, closeM, err := openManifest(log, manifest)
 	if err != nil {
 		return nil, err
 	}
+	defer closeM()
 
 	mappings := make(map[string]string)
-	lines := strings.Split(string(m), "\n")
+	lineN := 1
+	eof := false
 
-	for i, line := range lines {
-		if len(line) < 1 {
-			continue
-		}
+	for !eof {
+		src, dest, err := readManifestEntry(m, &lineN)
+		if err != nil {
+			if errors.Is(err, errManifest) {
+				log.Log(logger.LevelWARN, fmt.Sprintf("Error: %s. Skipping.", err))
+			} else if errors.Is(err, io.EOF) {
+				eof = true
+			} else {
+				return nil, err
+			}
 
-		mapping := strings.Split(line, ManifestSep)
-		if len(mapping) < 2 || len(mapping[0]) < 1 || len(mapping[1]) < 1 {
-			log.Log(logger.LevelWARN, fmt.Sprintf("Manifest syntax error at line %d. Skipping.", i))
-			continue
-		}
-
-		src, dest, norm := normPaths(mapping[0], mapping[1])
-		if !norm {
-			log.Log(logger.LevelWARN, "Cannot normalize paths for "+src+" => "+dest+". Skipping.")
 			continue
 		}
 
