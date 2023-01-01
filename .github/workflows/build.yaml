@@ -4,16 +4,16 @@ on: [ push, workflow_call, workflow_dispatch ]
 jobs:
   build-macos:
     name: Build macOS binaries
-    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@v0.1.0
+    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@v0.2.0
     with:
       output: migrate
   build-linux-x86:
     name: Build Linux binaries
-    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@v0.1.0
+    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@v0.2.0
     with:
       output: migrate
   build-windows:
     name: Build Windows binaries
-    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@v0.1.0
+    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@v0.2.0
     with:
       output: migrate

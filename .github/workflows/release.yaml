@@ -41,7 +41,7 @@ jobs:
   build-macos:
     name: Build macOS binaries
     needs: [ prepare ]
-    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@main
+    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@v0.2.0
     with:
       output: migrate
       tags: prod
@@ -49,7 +49,7 @@ jobs:
   upload-macos-tgz:
     name: Upload macOS release
     needs: [ prepare, build-macos ]
-    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@v0.2.0
     with:
       archive-name: migrate-macos.tar.gz
       archive-mime: application/gzip
@@ -65,7 +65,7 @@ jobs:
   package-macos:
     name: Package macOS release
     needs: [ prepare, build-macos ]
-    uses: ghifari160/actions/.github/workflows/packager-macos.yaml@v0.1.0
+    uses: ghifari160/actions/.github/workflows/packager-macos.yaml@v0.2.0
     with:
       identifier: com.ghifari160.migrate
       version: ${{needs.prepare.outputs.version}}
@@ -76,7 +76,7 @@ jobs:
   upload-macos-pkg:
     name: Upload macOS release
     needs: [ prepare, package-macos ]
-    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@v0.2.0
     with:
       archive-name: migrate-macos.pkg
       archive-mime: application/octet+stream
@@ -93,7 +93,7 @@ jobs:
   build-linux:
     name: Build Linux binaries
     needs: [ prepare ]
-    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@main
+    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@v0.2.0
     with:
       output: migrate
       tags: prod
@@ -101,7 +101,7 @@ jobs:
   upload-linux-x86:
     name: Upload Linux release (linux_x86)
     needs: [ prepare, build-linux ]
-    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@v0.2.0
     with:
       archive-name: migrate-linux_x86.tar.gz
       archive-mime: application/gzip
@@ -117,7 +117,7 @@ jobs:
   upload-linux-arm:
     name: Upload Linux release (linux_arm)
     needs: [ prepare, build-linux ]
-    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@v0.2.0
     with:
       archive-name: migrate-linux_arm.tar.gz
       archive-mime: application/gzip
@@ -134,7 +134,7 @@ jobs:
   build-windows:
     name: Build Windows binaries
     needs: [ prepare ]
-    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@main
+    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@v0.2.0
     with:
       output: migrate
       tags: prod
@@ -142,14 +142,14 @@ jobs:
   package-windows:
     name: Package Windows release
     needs: [ prepare, build-windows ]
-    uses: ghifari160/actions/.github/workflows/packager-windows.yaml@main
+    uses: ghifari160/actions/.github/workflows/packager-windows.yaml@v0.2.0
     with:
       package-name: migrate-windows_x86
       archive-name: migrate-windows_x86.tar.gz
   upload-windows:
     name: Upload Windows release (windows_x86)
     needs: [ prepare, package-windows ]
-    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@v0.2.0
     with:
       archive-name: migrate-windows_x86.zip
       archive-mime: application/zip
