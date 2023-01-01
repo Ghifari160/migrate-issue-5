@@ -241,7 +241,13 @@ func stepSetupGoWinres(conf configs) {
 	_, err = cmd.Output()
 	handleError("install go-winres@v"+goWinresVer, err)
 
-	goWinresPath = filepath.Join(os.Getenv("GOPATH"), "bin", "go-winres")
+	fmt.Println("look for go-winres after install")
+	goWinresPath, err = exec.LookPath("go-winres")
+	if err == nil {
+		fmt.Println("go-winres found: " + goWinresPath)
+		return
+	}
+	handleError("look for go-winres after install", err)
 }
 
 // stepGenWinres generates resources for Windows binaries.
