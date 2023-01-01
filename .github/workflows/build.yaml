@@ -24,36 +24,17 @@ on:
         description: "Copyright year"
 jobs:
   build-macos:
-    name: Build macOS universal binary
-    uses: ghifari160/migrate/.github/workflows/build-macos-universal.yaml@main
+    name: Build macOS binaries
+    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@v0.1.0
     with:
-      production: ${{inputs.production}}
-      version: ${{inputs.version}}
-      year: ${{inputs.year}}
+      output: migrate
   build-linux-x86:
-    name: Build Linux x86 binary
-    uses: ghifari160/migrate/.github/workflows/build-linux.yaml@main
+    name: Build Linux binaries
+    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@v0.1.0
     with:
-      goarch: 386
-      archid: x86
-      production: ${{inputs.production}}
-      version: ${{inputs.version}}
-      year: ${{inputs.year}}
-  build-linux-arm:
-    name: Build Linux ARM binary
-    uses: ghifari160/migrate/.github/workflows/build-linux.yaml@main
-    with:
-      goarch: arm
-      archid: arm
-      production: ${{inputs.production}}
-      version: ${{inputs.version}}
-      year: ${{inputs.year}}
+      output: migrate
   build-windows:
-    name: Build Windows binary
-    uses: ghifari160/migrate/.github/workflows/build-windows.yaml@main
+    name: Build Windows binaries
+    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@v0.1.0
     with:
-      goarch: 386
-      archid: x86
-      production: ${{inputs.production}}
-      version: ${{inputs.version}}
-      year: ${{inputs.year}}
+      output: migrate
