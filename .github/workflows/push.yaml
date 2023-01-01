@@ -1,6 +1,0 @@
-name: Push check
-on: push
-jobs:
-  build-binaries:
-    name: Build binaries
-    uses: ghifari160/migrate/.github/workflows/build.yaml@main

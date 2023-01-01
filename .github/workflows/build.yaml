@@ -1,27 +1,6 @@
-name: Build binaries
-on:
-  workflow_call:
-    inputs:
-      production:
-        type: boolean
-        description: "Run in production mode"
-      version:
-        type: string
-        description: "Version (without leading \"v\")"
-      year:
-        type: string
-        description: "Copyright year"
-  workflow_dispatch:
-    inputs:
-      production:
-        type: boolean
-        description: "Run in production mode"
-      version:
-        type: string
-        description: "Version (without leading \"v\")"
-      year:
-        type: string
-        description: "Copyright year"
+name: Build
+on: [ push, workflow_call, workflow_dispatch ]
+
 jobs:
   build-macos:
     name: Build macOS binaries
