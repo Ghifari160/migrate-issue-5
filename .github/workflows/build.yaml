@@ -11,6 +11,17 @@ on:
       year:
         type: string
         description: "Copyright year"
+  workflow_dispatch:
+    inputs:
+      production:
+        type: boolean
+        description: "Run in production mode"
+      version:
+        type: string
+        description: "Version (without leading \"v\")"
+      year:
+        type: string
+        description: "Copyright year"
 jobs:
   build-macos:
     name: Build macOS universal binary
