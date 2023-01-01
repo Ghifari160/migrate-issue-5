@@ -1,17 +1,23 @@
 name: Release
 on:
   release:
-    types: [published]
+    types: [ published ]
+
 permissions:
   contents: write
+
 jobs:
   prepare:
-    name: Sanitize version
-    runs-on: ubuntu-latest
+    name: Sanitize inputs
+    runs-on: ubuntu-22.04
     outputs:
       version: ${{steps.version.outputs.result}}
       year: ${{steps.year.outputs.result}}
       tag: ${{steps.tag.outputs.result}}
+      prebuild: |
+        go run ./scripts/prerelease -noninteractive \
+          -ver ${{steps.version.outputs.result}} \
+          -copyyear ${{steps.year.outputs.result}}
     steps:
     - id: tag
       uses: actions/github-script@v6
@@ -31,52 +37,128 @@ jobs:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: return new Date().getFullYear()
         result-encoding: string
-  build-binaries:
-    needs: [prepare]
-    name: Build binaries
-    uses: ghifari160/migrate/.github/workflows/build.yaml@main
+
+  build-macos:
+    name: Build macOS binaries
+    needs: [ prepare ]
+    uses: ghifari160/actions/.github/workflows/go-builder-macos.yaml@main
     with:
-      production: true
+      output: migrate
+      tags: prod
+      prebuild: ${{needs.prepare.outputs.prebuild}}
+  upload-macos-tgz:
+    name: Upload macOS release
+    needs: [ prepare, build-macos ]
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    with:
+      archive-name: migrate-macos.tar.gz
+      archive-mime: application/gzip
+      release-upload: true
+      release-tag: ${{needs.prepare.outputs.tag}}
+      s3-upload: true
+      s3-provider: digitalocean
+      s3-region: nyc3
+      s3-bucket: s3://g16projects-prod/migrate/${{needs.prepare.outputs.tag}}/
+    secrets:
+      s3-access-key: ${{secrets.S3_ACCESS_KEY}}
+      s3-secret-key: ${{secrets.S3_SECRET_KEY}}
+  package-macos:
+    name: Package macOS release
+    needs: [ prepare, build-macos ]
+    uses: ghifari160/actions/.github/workflows/packager-macos.yaml@v0.1.0
+    with:
+      identifier: com.ghifari160.migrate
       version: ${{needs.prepare.outputs.version}}
-      year: ${{needs.prepare.outputs.year}}
-  upload-artifacts-release:
-    needs: [prepare,build-binaries]
-    runs-on: ubuntu-latest
-    name: Upload artifacts to release
-    steps:
-    - name: Download build artifacts
-      id: artifacts
-      uses: actions/download-artifact@v3
-      with:
-        path: migrate
-    - name: Upload artifacts to release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz
-          ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz
-          ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz
-          ${{steps.artifacts.outputs.download-path}}/migrate-windows_x86.zip/migrate-windows_x86.zip
-  upload-artifacts-do:
-    needs: [prepare,build-binaries]
-    runs-on: ubuntu-latest
-    name: Upload artifacts to DO Spaces
-    steps:
-    - name: Setup s3cmd
-      uses: s3-actions/s3cmd@v1.3.0
-      with:
-        provider: digitalocean
-        region: nyc3
-        access_key: ${{secrets.S3_ACCESS_KEY}}
-        secret_key: ${{secrets.S3_SECRET_KEY}}
-    - name: Download build artifacts
-      id: artifacts
-      uses: actions/download-artifact@v3
-      with:
-        path: migrate
-    - name: Upload tarballs to DO Spaces
-      run: |
-        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_x86.tar.gz/migrate-linux_x86.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
-        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-linux_arm.tar.gz/migrate-linux_arm.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
-        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-macos.tar.gz/migrate-macos.tar.gz --mime-type application/gzip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
-        s3cmd put ${{steps.artifacts.outputs.download-path}}/migrate-windows_x86.zip/migrate-windows_x86.zip --mime-type application/zip -P s3://g16projects-prod/migrate/v${{needs.prepare.outputs.version}}/
+      package-name: migrate-macos
+      install-path: usr/local/migrate
+      install-title: Migrate
+      archive-name: migrate-macos.tar.gz
+  upload-macos-pkg:
+    name: Upload macOS release
+    needs: [ prepare, package-macos ]
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    with:
+      archive-name: migrate-macos.pkg
+      archive-mime: application/octet+stream
+      release-upload: true
+      release-tag: ${{needs.prepare.outputs.tag}}
+      s3-upload: true
+      s3-provider: digitalocean
+      s3-region: nyc3
+      s3-bucket: s3://g16projects-prod/migrate/${{needs.prepare.outputs.tag}}/
+    secrets:
+      s3-access-key: ${{secrets.S3_ACCESS_KEY}}
+      s3-secret-key: ${{secrets.S3_SECRET_KEY}}
+
+  build-linux:
+    name: Build Linux binaries
+    needs: [ prepare ]
+    uses: ghifari160/actions/.github/workflows/go-builder-linux.yaml@main
+    with:
+      output: migrate
+      tags: prod
+      prebuild: ${{needs.prepare.outputs.prebuild}}
+  upload-linux-x86:
+    name: Upload Linux release (linux_x86)
+    needs: [ prepare, build-linux ]
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    with:
+      archive-name: migrate-linux_x86.tar.gz
+      archive-mime: application/gzip
+      release-upload: true
+      release-tag: ${{needs.prepare.outputs.tag}}
+      s3-upload: true
+      s3-provider: digitalocean
+      s3-region: nyc3
+      s3-bucket: s3://g16projects-prod/migrate/${{needs.prepare.outputs.tag}}/
+    secrets:
+      s3-access-key: ${{secrets.S3_ACCESS_KEY}}
+      s3-secret-key: ${{secrets.S3_SECRET_KEY}}
+  upload-linux-arm:
+    name: Upload Linux release (linux_arm)
+    needs: [ prepare, build-linux ]
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    with:
+      archive-name: migrate-linux_arm.tar.gz
+      archive-mime: application/gzip
+      release-upload: true
+      release-tag: ${{needs.prepare.outputs.tag}}
+      s3-upload: true
+      s3-provider: digitalocean
+      s3-region: nyc3
+      s3-bucket: s3://g16projects-prod/migrate/${{needs.prepare.outputs.tag}}/
+    secrets:
+      s3-access-key: ${{secrets.S3_ACCESS_KEY}}
+      s3-secret-key: ${{secrets.S3_SECRET_KEY}}
+
+  build-windows:
+    name: Build Windows binaries
+    needs: [ prepare ]
+    uses: ghifari160/actions/.github/workflows/go-builder-windows.yaml@main
+    with:
+      output: migrate
+      tags: prod
+      prebuild: ${{needs.prepare.outputs.prebuild}}
+  package-windows:
+    name: Package Windows release
+    needs: [ prepare, build-windows ]
+    uses: ghifari160/actions/.github/workflows/packager-windows.yaml@main
+    with:
+      package-name: migrate-windows_x86
+      archive-name: migrate-windows_x86.tar.gz
+  upload-windows:
+    name: Upload Windows release (windows_x86)
+    needs: [ prepare, package-windows ]
+    uses: ghifari160/actions/.github/workflows/uploader.yaml@uploader
+    with:
+      archive-name: migrate-windows_x86.zip
+      archive-mime: application/zip
+      release-upload: true
+      release-tag: ${{needs.prepare.outputs.tag}}
+      s3-upload: true
+      s3-provider: digitalocean
+      s3-region: nyc3
+      s3-bucket: s3://g16projects-prod/migrate/${{needs.prepare.outputs.tag}}/
+    secrets:
+      s3-access-key: ${{secrets.S3_ACCESS_KEY}}
+      s3-secret-key: ${{secrets.S3_SECRET_KEY}}
